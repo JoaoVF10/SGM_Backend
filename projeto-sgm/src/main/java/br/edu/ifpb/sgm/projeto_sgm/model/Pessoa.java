@@ -61,9 +61,7 @@ public class Pessoa implements UserDetails {
         this.senha = senha;
     }
 
-    public String getSenha() {
-        throw new UnsupportedOperationException("Acesso ao campo senha não permitido.");
-    }
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

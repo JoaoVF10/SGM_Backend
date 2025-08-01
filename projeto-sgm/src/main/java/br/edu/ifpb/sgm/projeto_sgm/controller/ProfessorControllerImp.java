@@ -1,10 +1,7 @@
 package br.edu.ifpb.sgm.projeto_sgm.controller;
 
-import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.model.Professor;
 import br.edu.ifpb.sgm.projeto_sgm.service.ProfessorServiceImp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -36,17 +33,17 @@ public class ProfessorControllerImp {
 
     @GetMapping("/cadastros")
     public ResponseEntity<List<ProfessorResponseDTO>> listarTodos() {
-        return professorService.listarTodos();
+        return professorService.listarTodos(); // lista todos, inclusive não coordenadores
     }
 
     @GetMapping
     public ResponseEntity<List<ProfessorResponseDTO>> listarTodosCadastrados() {
-        return professorService.listarTodosCadastrados();
+        return professorService.listarTodosCadastrados(); // lista apenas cadastrados = ativos
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProfessorResponseDTO> atualizar(@PathVariable Long id, @RequestBody ProfessorRequestDTO dto) {
-        if(dto.getSenha() != null){
+        if (dto.getSenha() != null) {
             encriptPassword(dto);
         }
         return professorService.atualizar(id, dto);
@@ -61,6 +58,25 @@ public class ProfessorControllerImp {
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         return professorService.deletar(id);
     }
+
+    // ===================== COORDENADORES =====================
+
+    @GetMapping("/coordenadores")
+    public ResponseEntity<List<ProfessorResponseDTO>> listarCoordenadores() {
+        List<ProfessorResponseDTO> coordenadores = professorService.listarTodos()
+                .getBody().stream()
+                .filter(p -> p.getCursosResponseDTO() != null && !p.getCursosResponseDTO().isEmpty())
+                .toList();
+
+        return ResponseEntity.ok(coordenadores);
+    }
+
+    @DeleteMapping("/coordenadores/{id}")
+    public ResponseEntity<Void> removerCoordenador(@PathVariable Long id) {
+        return professorService.removerSomenteCoordenador(id);
+    }
+
+    // ===================== AUXILIAR =====================
 
     private void encriptPassword(ProfessorRequestDTO dto) {
         String encodedPassword = passwordEncoder.encode(dto.getSenha());

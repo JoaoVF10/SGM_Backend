@@ -1,10 +1,7 @@
 package br.edu.ifpb.sgm.projeto_sgm.service;
 
-import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.exception.AlunoNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.DisciplinaNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.InstituicaoNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.ProfessorNotFoundException;
@@ -12,15 +9,14 @@ import br.edu.ifpb.sgm.projeto_sgm.mapper.PessoaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.ProfessorMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
 import br.edu.ifpb.sgm.projeto_sgm.repository.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +44,8 @@ public class ProfessorServiceImp {
     @Autowired
     private PessoaMapper pessoaMapper;
 
+    // ========================= CRUD =========================
+
     public ResponseEntity<ProfessorResponseDTO> salvar(ProfessorRequestDTO dto) {
         Pessoa pessoa = pessoaMapper.fromPessoa(dto);
         pessoa.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
@@ -59,7 +57,6 @@ public class ProfessorServiceImp {
         professor.setPessoa(pessoaSalva);
 
         Professor salvo = professorRepository.save(professor);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(professorMapper.toResponseDTO(salvo));
     }
 
@@ -86,19 +83,18 @@ public class ProfessorServiceImp {
     }
 
     public ResponseEntity<ProfessorResponseDTO> atualizar(Long id, ProfessorRequestDTO dto) {
-        Pessoa pessoa = pessoaRepository.findById(id)
-                .orElseThrow(AlunoNotFoundException::new);
-
-        Pessoa pesssoaAtualizada = pessoaMapper.fromPessoa(dto);
-
-        if (dto.getInstituicaoId() != null) {
-            pesssoaAtualizada.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
-        }
-
-        pessoaMapper.updatePessoaFromPessoa(pesssoaAtualizada, pessoa);
-
         Professor professor = professorRepository.findById(id)
                 .orElseThrow(() -> new ProfessorNotFoundException("Professor com ID " + id + " não encontrado."));
+
+        Pessoa pessoa = professor.getPessoa();
+        Pessoa pessoaAtualizada = pessoaMapper.fromPessoa(dto);
+
+        if (dto.getInstituicaoId() != null) {
+            pessoaAtualizada.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+        }
+
+        pessoaMapper.updatePessoaFromPessoa(pessoaAtualizada, pessoa);
+        pessoaRepository.save(pessoa);
 
         professorMapper.updateProfessorFromDto(dto, professor);
 
@@ -110,9 +106,6 @@ public class ProfessorServiceImp {
             professor.setCursos(buscarCursos(dto.getCursosId()));
         }
 
-        Pessoa pessoaSalva = pessoaRepository.save(pessoa);
-        professor.setPessoa(pessoaSalva);
-
         Professor atualizado = professorRepository.save(professor);
         return ResponseEntity.ok(professorMapper.toResponseDTO(atualizado));
     }
@@ -122,28 +115,38 @@ public class ProfessorServiceImp {
                 .orElseThrow(ProfessorNotFoundException::new);
         professor.setCadastrado(false);
         professor.setCursos(null);
-
         professorRepository.save(professor);
 
         return ResponseEntity.noContent().build();
     }
 
-    public ResponseEntity<ProfessorResponseDTO> associar(Long id, ProfessorRequestDTO professorRequestDTO){
-        Pessoa pessoa = pessoaRepository.findById(id).orElseThrow();
+    // ========================= Associação =========================
+
+    public ResponseEntity<ProfessorResponseDTO> associar(Long id, ProfessorRequestDTO dto) {
+        Pessoa pessoa = pessoaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pessoa com ID " + id + " não encontrada"));
 
         Professor professor = new Professor();
-
-
-        professor.setDisciplinas(buscarDisciplinas(professorRequestDTO.getDisciplinasId()));
-        professor.setCursos(buscarCursos(professorRequestDTO.getCursosId()));
-
+        professor.setDisciplinas(buscarDisciplinas(dto.getDisciplinasId()));
+        professor.setCursos(buscarCursos(dto.getCursosId()));
         professor.setPessoa(pessoa);
 
         Professor salvo = professorRepository.save(professor);
         return ResponseEntity.status(HttpStatus.CREATED).body(professorMapper.toResponseDTO(salvo));
     }
 
-    // Auxiliar
+    public ResponseEntity<Void> removerSomenteCoordenador(Long id) {
+        Professor professor = professorRepository.findById(id)
+                .orElseThrow(ProfessorNotFoundException::new);
+
+        professor.setCursos(null);
+        professorRepository.save(professor);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // ========================= Auxiliares =========================
+
     private List<Disciplina> buscarDisciplinas(List<Long> ids) {
         if (ids == null || ids.isEmpty()) return Collections.emptyList();
 
@@ -167,9 +170,8 @@ public class ProfessorServiceImp {
                 .filter(id -> cursoRepository.findById(id).isEmpty())
                 .toList();
 
-
         if (!idsNaoEncontrados.isEmpty()) {
-            throw new DisciplinaNotFoundException("IDs dos Cursos inválidos: " + idsNaoEncontrados);
+            throw new DisciplinaNotFoundException("IDs dos cursos inválidos: " + idsNaoEncontrados);
         }
 
         return ids.stream()

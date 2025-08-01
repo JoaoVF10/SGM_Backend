@@ -12,6 +12,6 @@ public class CursoResponseDTO {
     private String nome;
     private NivelCurso nivel;
     private int duracao; // em semestres, por exemplo
-    private InstituicaoResponseDTO instituicaoResponseDTO;
+    private InstituicaoResponseDTO instituicao;
 
 }

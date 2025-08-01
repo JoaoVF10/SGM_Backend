@@ -26,24 +26,24 @@ import java.io.IOException;
 import static br.edu.ifpb.sgm.projeto_sgm.util.Constants.*;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer{
+public class WebConfig {
 
-   private final JwtAuthFilter jwtAuthFilter;
+    private final JwtAuthFilter jwtAuthFilter;
 
     public WebConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
+    // ✅ CORS configurado para permitir acesso do frontend React
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173") // permite sua aplicação React
-                        .allowedOrigins("http://localhost:5173")
+                        .allowedOriginPatterns("http://localhost:*")
+                        // Porta correta do seu frontend
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                        .allowedHeaders("Authorization", "Content-Type")
                         .allowedHeaders("*")
                         .exposedHeaders("Authorization")
                         .allowCredentials(true);
@@ -61,19 +61,20 @@ public class WebConfig implements WebMvcConfigurer{
         return authConfig.getAuthenticationManager();
     }
 
-
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())
-                )
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/instituicoes/**").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/alunos").permitAll() // ✅ permite cadastro de aluno
+                        .requestMatchers(HttpMethod.GET, "/api/alunos/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
+                        .requestMatchers(HttpMethod.PUT, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DISCENTE)
+                        .requestMatchers("/api/alunos/**").hasAnyRole(ADMIN, COORDENADOR)
+                        .requestMatchers("/api/instituicoes/**").hasAnyRole(ADMIN, COORDENADOR)
                         .requestMatchers("/api/cursos/**").hasAnyRole(ADMIN, COORDENADOR)
                         .requestMatchers(HttpMethod.GET, "/api/disciplinas/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
                         .requestMatchers("/api/disciplinas/**").hasAnyRole(ADMIN, COORDENADOR)
@@ -83,31 +84,24 @@ public class WebConfig implements WebMvcConfigurer{
                         .requestMatchers("/api/atividades/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers(HttpMethod.GET, "/api/professores/**").authenticated()
                         .requestMatchers("/api/professores/**").hasAnyRole(ADMIN, COORDENADOR)
-                        .requestMatchers(HttpMethod.POST, "/api/alunos").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/alunos/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
-                        .requestMatchers(HttpMethod.PUT, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DISCENTE)
-                        .requestMatchers("/api/alunos/**").hasAnyRole(ADMIN, COORDENADOR)
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-        ;
-        http.logout(
-                (logout) -> logout
-                        .clearAuthentication(true)
-                        .invalidateHttpSession(true)
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler(new LogoutSuccessHandler() {
-                            @Override
-                            public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
-                                    throws IOException, ServletException {
-                                response.setStatus(HttpServletResponse.SC_OK);
-                                response.getWriter().write("Logout realizado com sucesso!");
-                            }
-                        })
-        );
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
+        http.logout(logout -> logout
+                .clearAuthentication(true)
+                .invalidateHttpSession(true)
+                .logoutUrl("/api/auth/logout")
+                .logoutSuccessHandler(new LogoutSuccessHandler() {
+                    @Override
+                    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+                            throws IOException, ServletException {
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        response.getWriter().write("Logout realizado com sucesso!");
+                    }
+                })
+        );
 
         return http.build();
     }

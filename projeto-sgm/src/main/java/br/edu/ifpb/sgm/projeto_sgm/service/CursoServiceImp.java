@@ -36,11 +36,16 @@ public class CursoServiceImp {
 
 
 
+
     public ResponseEntity<CursoResponseDTO> salvar(CursoRequestDTO dto) {
         Curso curso = cursoMapper.toEntity(dto);
 
-        curso.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
-        curso.setNivel(NivelCurso.valueOf(dto.getNivelString()));
+        Instituicao inst = buscarInstituicao(dto.getInstituicaoId());
+
+
+        curso.setInstituicao(inst);
+        curso.setNivel(NivelCurso.valueOf(dto.getNivel()));
+
         Curso salvo = cursoRepository.save(curso);
         return ResponseEntity.status(HttpStatus.CREATED).body(cursoMapper.toResponseDTO(salvo));
     }
@@ -71,8 +76,8 @@ public class CursoServiceImp {
             curso.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
         }
 
-        if (dto.getNivelString() != null) {
-            curso.setNivel(NivelCurso.valueOf(dto.getNivelString()));
+        if (dto.getNivel() != null) {
+            curso.setNivel(NivelCurso.valueOf(dto.getNivel()));
         }
 
         Curso atualizado = cursoRepository.save(curso);

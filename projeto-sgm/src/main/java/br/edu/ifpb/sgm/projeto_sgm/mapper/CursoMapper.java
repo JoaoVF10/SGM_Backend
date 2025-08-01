@@ -16,7 +16,7 @@ public interface CursoMapper {
     @Mapping(target = "instituicao", ignore = true)
     Curso toEntity(CursoRequestDTO CursoRequestDTO);
 
-    @Mapping(source = "instituicao", target = "instituicaoResponseDTO")
+    @Mapping(source = "instituicao", target = "instituicao")
     CursoResponseDTO toResponseDTO(Curso curso);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

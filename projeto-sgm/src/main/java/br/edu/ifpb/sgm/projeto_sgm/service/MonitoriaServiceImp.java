@@ -45,6 +45,18 @@ public class MonitoriaServiceImp {
     private MonitoriaMapper monitoriaMapper;
 
     public ResponseEntity<MonitoriaResponseDTO> salvar(MonitoriaRequestDTO dto) {
+        if (dto.getDisciplinaId() == null) {
+            throw new IllegalArgumentException("O ID da disciplina é obrigatório.");
+        }
+
+        if (dto.getProfessorId() == null) {
+            throw new IllegalArgumentException("O ID do professor é obrigatório.");
+        }
+
+        if (dto.getProcessoSeletivoId() == null) {
+            throw new IllegalArgumentException("O ID do processo seletivo é obrigatório.");
+        }
+
         Monitoria monitoria = monitoriaMapper.toEntity(dto);
 
         monitoria.setDisciplina(buscarDisciplina(dto.getDisciplinaId()));
@@ -55,6 +67,7 @@ public class MonitoriaServiceImp {
         Monitoria salva = monitoriaRepository.save(monitoria);
         return ResponseEntity.status(HttpStatus.CREATED).body(monitoriaMapper.toResponseDTO(salva));
     }
+
 
     public ResponseEntity<MonitoriaResponseDTO> buscarPorId(Long id) {
         Monitoria monitoria = monitoriaRepository.findById(id)
