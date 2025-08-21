@@ -1,6 +1,7 @@
 package br.edu.ifpb.sgm.projeto_sgm.model;
 
 import br.edu.ifpb.sgm.projeto_sgm.model.embeddable.MonitoriaInscritoId;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,6 +23,7 @@ public class MonitoriaInscritos {
     @ManyToOne
     @MapsId("monitoriaId")
     @JoinColumn(name = "monitoria_id")
+    @JsonIgnore
     private Monitoria monitoria;
 
     @ManyToOne
@@ -31,4 +33,6 @@ public class MonitoriaInscritos {
 
     @Column(nullable = false)
     private boolean selecionado;
+
+
 }

@@ -44,18 +44,25 @@ public class ProfessorServiceImp {
     @Autowired
     private PessoaMapper pessoaMapper;
 
-    // ========================= CRUD =========================
+    @Autowired
+    private RoleRepository roleRepository;
+
+
 
     public ResponseEntity<ProfessorResponseDTO> salvar(ProfessorRequestDTO dto) {
         Pessoa pessoa = pessoaMapper.fromPessoa(dto);
         pessoa.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+
+
+        atribuirRole(pessoa, dto);
+
         Pessoa pessoaSalva = pessoaRepository.save(pessoa);
 
         Professor professor = new Professor();
         professor.setDisciplinas(buscarDisciplinas(dto.getDisciplinasId()));
         professor.setCursos(buscarCursos(dto.getCursosId()));
         professor.setPessoa(pessoaSalva);
-
+        professor.setCoordenador(dto.isCoordenador());
         Professor salvo = professorRepository.save(professor);
         return ResponseEntity.status(HttpStatus.CREATED).body(professorMapper.toResponseDTO(salvo));
     }
@@ -93,6 +100,9 @@ public class ProfessorServiceImp {
             pessoaAtualizada.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
         }
 
+
+        atribuirRole(pessoaAtualizada, dto);
+
         pessoaMapper.updatePessoaFromPessoa(pessoaAtualizada, pessoa);
         pessoaRepository.save(pessoa);
 
@@ -107,6 +117,7 @@ public class ProfessorServiceImp {
         }
 
         Professor atualizado = professorRepository.save(professor);
+        professor.setCoordenador(dto.isCoordenador());
         return ResponseEntity.ok(professorMapper.toResponseDTO(atualizado));
     }
 
@@ -145,7 +156,7 @@ public class ProfessorServiceImp {
         return ResponseEntity.noContent().build();
     }
 
-    // ========================= Auxiliares =========================
+
 
     private List<Disciplina> buscarDisciplinas(List<Long> ids) {
         if (ids == null || ids.isEmpty()) return Collections.emptyList();
@@ -182,5 +193,14 @@ public class ProfessorServiceImp {
     private Instituicao buscarInstituicao(Long id) {
         return instituicaoRepository.findById(id)
                 .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + id + " não encontrada."));
+    }
+
+    private void atribuirRole(Pessoa pessoa, ProfessorRequestDTO dto) {
+        String roleName = dto.isCoordenador() ? "ROLE_COORDENADOR" : "ROLE_DOCENTE";
+
+        Role role = roleRepository.findByRole(roleName)
+                .orElseThrow(() -> new RuntimeException("Role " + roleName + " não encontrada"));
+
+        pessoa.setRoles(List.of(role));
     }
 }

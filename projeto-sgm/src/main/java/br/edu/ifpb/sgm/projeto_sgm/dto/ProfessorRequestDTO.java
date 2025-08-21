@@ -16,4 +16,5 @@ public class ProfessorRequestDTO{
     protected Long instituicaoId;
     private List<Long> disciplinasId;
     private Set<Long> cursosId;
+    private boolean coordenador;
 }

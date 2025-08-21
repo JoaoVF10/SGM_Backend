@@ -10,6 +10,4 @@ public interface ProfessorRepository extends JpaRepository<Professor, Long> {
 
     List<Professor> findByCadastradoTrue();
 
-//    List<Professor> findByNomeContainingIgnoreCase(String nome);
-//    List<Professor> findByInstituicao_Id(Long instituicaoId);
 }

@@ -27,3 +27,5 @@ public interface MonitoriaRepository extends JpaRepository<Monitoria, Long> {
 //    List<Monitoria> findMonitoriasAtivasPorDisciplina(@Param("disciplina") String disciplina, @Param("hoje") LocalDate hoje);
 
 }
+
+

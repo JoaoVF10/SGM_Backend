@@ -76,7 +76,7 @@ public class ProfessorControllerImp {
         return professorService.removerSomenteCoordenador(id);
     }
 
-    // ===================== AUXILIAR =====================
+
 
     private void encriptPassword(ProfessorRequestDTO dto) {
         String encodedPassword = passwordEncoder.encode(dto.getSenha());

@@ -39,4 +39,8 @@ public class Professor {
 
     @Column
     private Boolean cadastrado = true;
+
+    @Column(nullable = false)
+    private boolean coordenador = false;
+
 }

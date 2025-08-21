@@ -1,5 +1,6 @@
 package br.edu.ifpb.sgm.projeto_sgm.service;
 
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.*;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +45,9 @@ public class MonitoriaServiceImp {
 
     @Autowired
     private MonitoriaMapper monitoriaMapper;
+
+    @Autowired
+    private PessoaRepository pessoaRepository;
 
     public ResponseEntity<MonitoriaResponseDTO> salvar(MonitoriaRequestDTO dto) {
         if (dto.getDisciplinaId() == null) {
@@ -152,4 +157,66 @@ public class MonitoriaServiceImp {
                 .map(id -> monitoriaInscricoesRepository.findById(id).get())
                 .collect(Collectors.toList());
     }
+
+    public ResponseEntity<?> inscreverAluno(Long monitoriaId, String identificadorUsuario) {
+        // Buscar Pessoa por matrícula (padrão do seu login)
+        Optional<Pessoa> pessoaOpt = pessoaRepository.findByMatricula(identificadorUsuario);
+        if (pessoaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuário não encontrado.");
+        }
+
+        Pessoa pessoa = pessoaOpt.get();
+
+        // Verifica se é aluno
+        if (pessoa.getAluno() == null) {
+            return ResponseEntity.badRequest().body("Apenas alunos podem se inscrever.");
+        }
+
+        Aluno aluno = pessoa.getAluno();
+
+        Optional<Monitoria> monitoriaOpt = monitoriaRepository.findById(monitoriaId);
+        if (monitoriaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Monitoria não encontrada.");
+        }
+
+        Monitoria monitoria = monitoriaOpt.get();
+
+        boolean jaInscrito = monitoriaInscricoesRepository.existsByAlunoAndMonitoria(aluno, monitoria);
+        if (jaInscrito) {
+            return ResponseEntity.badRequest().body("Você já está inscrito nesta monitoria.");
+        }
+
+        MonitoriaInscritos inscricao = new MonitoriaInscritos();
+        inscricao.setAluno(aluno);
+        inscricao.setMonitoria(monitoria);
+        inscricao.setSelecionado(false);
+
+        monitoriaInscricoesRepository.save(inscricao);
+
+        return ResponseEntity.ok("Inscrição realizada com sucesso.");
+    }
+
+    public ResponseEntity<?> listarInscricoesDoAluno(String identificadorUsuario) {
+        Optional<Pessoa> pessoaOpt = pessoaRepository.findByMatricula(identificadorUsuario);
+        if (pessoaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuário não encontrado.");
+        }
+
+        Pessoa pessoa = pessoaOpt.get();
+
+        if (pessoa.getAluno() == null) {
+            return ResponseEntity.badRequest().body("Apenas alunos possuem inscrições.");
+        }
+
+        Aluno aluno = pessoa.getAluno();
+
+        List<MonitoriaInscritos> inscricoes = monitoriaInscricoesRepository.findByAluno(aluno);
+
+        List<MonitoriaInscritosResponseDTO> dtos = inscricoes.stream()
+                .map(MonitoriaInscritosResponseDTO::new)
+                .toList();
+
+        return ResponseEntity.ok(dtos);
+    }
+
 }

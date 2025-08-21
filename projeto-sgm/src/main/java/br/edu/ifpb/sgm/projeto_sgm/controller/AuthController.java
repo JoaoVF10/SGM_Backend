@@ -39,12 +39,12 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginResquestDTO login) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(login.getMatricula(), login.getPassword()));
+                    new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String token = jwtService.generateToken(authentication);
 
-            PessoaResponseDTO pessoaDTO = pessoaServiceImp.findDtoByMatricula(login.getMatricula());
+            PessoaResponseDTO pessoaDTO = pessoaServiceImp.findDtoByMatricula(login.getUsername());
             TokenDTO tokendto = new TokenDTO(token, pessoaDTO);
 
             return ResponseEntity.ok(tokendto);

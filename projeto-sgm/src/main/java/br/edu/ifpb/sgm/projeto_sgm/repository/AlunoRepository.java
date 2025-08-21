@@ -11,6 +11,8 @@ import java.util.Optional;
 public interface AlunoRepository extends JpaRepository<Aluno, Long> {
 
     List<Aluno> findByCadastradoTrue();
+    Optional<Aluno> findByPessoa_Matricula(String matricula);
+
 
 //    Optional<Aluno> findByMatricula(String matricula);
 //    List<Aluno> findByNomeContainingIgnoreCase(String nome);
