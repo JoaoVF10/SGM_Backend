@@ -48,13 +48,9 @@ public class SuapService {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
-            JSONArray alunos = new JSONArray(response.body());
-            if (!alunos.isEmpty()) {
-                // Retorna apenas o primeiro aluno, você pode adaptar
-                return alunos.getJSONObject(0).toString();
-            } else {
-                return "{}"; // Nenhum aluno encontrado
-            }
+            System.out.println("Resposta da API SUAP:\n" + response.body());
+            JSONObject aluno = new JSONObject(response.body());
+            return aluno.toString();
         } else {
             System.out.println("Erro ao consultar aluno: " + response.body());
             return null;
